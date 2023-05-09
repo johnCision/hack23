@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<meta name="color-scheme" content="light dark" />
+
+	<title>Atlas AI</title>
+
+	<script type="importmap">
+		{
+			"imports": {
+				"@cision/atlas-components": "./lib/@cision/atlas-components/dist/index.js"
+			}
+		}
+	</script>
+	<script async defer type="module">
+		// npm i github:cision/atlas-components#v28
+		// cp -R node_modules/\@cision/atlas-components/ ./lib
+		import "@cision/atlas-components"
+	</script>
+	<script async defer type="module">
+
+		const KEY = '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'
+		const ORG = 'org-VzawLvJF9dTTMPqUbAr31z5N'
+
+
+		// const prompt = 'You are a research assistant with decades of experience. You condense information about companies with lists of their main products when appropriate. All responses are in markdown.'
+		// prompt="Create a detailed and clever press release with the following content:.\n\n {}".format(sentences),
+		const prompt = `
+			You have a business goal of establishing positive brand awareness of a new model of electric car in the US
+			with a slightly better range and comparable build quality.
+			Please list individual audiences, only provide a  RFC8259 compliant JSON response  following this format without deviation.
+			[{
+				"title", "title of audience",
+				"age_range": "age range"
+				}]
+			`
+		const temperature = 0.8
+		const model = 'text-davinci-003'
+		const user = 'this-is-made-up'
+		const max_tokens= 3800
+		const completionUrl = new URL('https://api.openai.com/v1/completions')
+
+		await fetch(completionUrl, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${KEY}`
+			},
+			body: JSON.stringify({
+				model,
+				prompt,
+				temperature,
+				user,
+				max_tokens,
+				frequency_penalty: 0.33,
+				presence_penalty: 0.32,
+				top_p: 1,
+			})
+		})
+		.then(response => {
+			console.log(response)
+			response.headers.forEach((h) => {
+				console.log(h)
+			})
+			return response.json()
+		})
+		.then(data => {
+			//console.log(JSON.stringify(data))
+			console.log(data)
+
+			const result = data.choices[0]
+			console.log(result.text)
+		})
+		.catch(e => console.warn(e))
+
+
+		export class UI {
+			static goodbye() {
+				const af = document.querySelector('atlas-application-frame')
+				af.toggleAttribute('backdrop')
+				const goodbyeAlert = document.getElementById('goodbyeAlert')
+				goodbyeAlert.show()
+			}
+
+			static setWorkflowStep(name) {
+				const workflow = document.getElementById('primaryWorkflow')
+				const steps = workflow.querySelectorAll('atlas-workflow-step[active]')
+				steps.forEach(step => step.toggleAttribute('active', false))
+
+				const activeStep = workflow.querySelector(`atlas-workflow-step[name="${name}"]`)
+				activeStep.toggleAttribute('active', true)
+			}
+
+			static promptSubmit(data) {
+				const nextButton = document.getElementById('promptSubmit')
+				nextButton.disabled = true
+
+				const promptText = document.getElementById('promptText')
+				promptText.disabled = true
+
+				console.log(promptText.value)
+
+				UI.setWorkflowStep('audienceSelection')
+
+				nextButton.disabled = false
+				promptText.disabled = false
+			}
+
+			static audienceSubmit(data) {
+
+
+				UI.setWorkflowStep('deliveryPlan')
+			}
+		}
+
+		onmessage = event => {
+			const { data } = event
+			const { type } = data
+			switch(type) {
+			case 'promptSubmit': return UI.promptSubmit(data)
+			case 'selectAudience': return UI.audienceSubmit(data)
+
+			case 'goodbye': return UI.goodbye(data)
+			default:
+				console.warn('unhandled message', type)
+			}
+		}
+	</script>
+	<style>
+		atlas-application-frame::part(app-logo) { margin-inline: auto; }
+		atlas-logo { width: 2.5em; }
+		atlas-avatar::part(initials) { background-color: #1d72fe; color: white; }
+
+		atlas-workflow-step::part(title) {
+			font-size: 2em;
+		}
+		atlas-workflow-step::part(body) {
+			display: block;
+			width: 90%;
+			max-width: 800px;
+			padding: 1em;
+			background-color: rgb(244 244 244);
+			border-radius: 1em;
+		}
+		atlas-workflow-step fieldset {
+			display: flex;
+			flex-direction: column;
+			gap: 2em;
+			border: none;
+			max-width: 140ch;
+			padding-block: 1em;
+		}
+
+		/*  */
+		atlas-input-textarea {
+			min-height: 15em;
+			--padding-block-start-label-spacer: 1.75em;
+		}
+
+
+
+		/*  */
+		atlas-checkbox {
+			display: grid;
+			grid-template-areas: "check label" "help help";
+			grid-template-columns: min-content 1fr;
+		}
+		atlas-checkbox::part(label) {
+			align-items: center;
+			font-weight: bold;
+			display: flex;
+			gap: 1em;
+			justify-content: space-between;
+			/* flex-wrap: nowrap; */
+		}
+		atlas-checkbox::part(label-wrapper) {
+			grid-area: label;
+			display: block;
+			width: 100%;
+		}
+		atlas-checkbox::part(helper-text) {
+			grid-area: help;
+			margin-block-start: .5em;
+			display: block;
+			/* width: 100%; */
+			/* max-width: 80%; */
+			margin-inline-start: 2em;
+			font-size: 0.75em;
+		}
+		atlas-checkbox > div[slot="helperText"] {
+			display: flex;
+			column-gap: 2em;
+			flex-wrap: wrap;
+		}
+		atlas-checkbox > div[slot="helperText"] > span {
+			display: block;
+			padding-block: 0.25em;
+			/* max-width: 55%; */
+		}
+		atlas-checkbox:not([data-help])::part(helper-text) {
+			display: none;
+		}
+	</style>
+	<script>
+		function toggleHelp(event) {
+			event.preventDefault()
+			event.stopPropagation()
+
+			const checkbox = event.target.closest('atlas-checkbox')
+			checkbox.toggleAttribute('data-help')
+		}
+
+		const PROMPT = 'I have a business goal of establishing positive brand awareness of a new model of car Im releasing in the US. The car is electric and cheaper than competitors with a slightly better range and comparable build quality. Can you suggest some PR goals for my launch? '
+		function injectPrompt(event){
+			event.preventDefault()
+			event.stopPropagation()
+			const textarea = event.target.closest('atlas-input-textarea')
+			textarea.value = PROMPT
+		}
+	</script>
+</head>
+<body data-theme="themeCisionOne">
+	<atlas-application-frame>
+		<atlas-alert type="danger" id="goodbyeAlert" slot="backdrop">
+			<atlas-icon name="bubble" slot="icon"></atlas-icon>
+    	<span slot="header">Good Bye</span>
+			End of line.
+		</atlas-alert>
+
+		<atlas-logo slot="app-logo"></atlas-logo>
+		<atlas-avatar slot="profile-controls" initials="AI"></atlas-avatar>
+
+		<atlas-main-nav slot="main-nav">
+			<atlas-main-nav-item>
+				<atlas-button selected>
+					<atlas-icon name="home" slot="prefix"></atlas-icon>
+					Home
+				</atlas-button>
+			</atlas-main-nav-item>
+			<atlas-main-nav-item>
+				<atlas-button disabled>
+					<atlas-icon name="settings" slot="prefix"></atlas-icon>
+					Settings
+				</atlas-button>
+			</atlas-main-nav-item>
+		</atlas-main-nav>
+
+		<atlas-workflow id="primaryWorkflow" slot="content-area">
+			<atlas-workflow-step name="prompt" active>
+
+				<span slot="title">Welcome</span>
+				<span slot="subTitle">...</span>
+
+				<form method="dialog">
+					<fieldset>
+						<atlas-input-textarea id="promptText">
+							<span onclick="injectPrompt(event)" slot="label">Prompt</span>
+						</atlas-input-textarea>
+					</fieldset>
+				</form>
+
+				<atlas-button-set slot="controls">
+					<atlas-button id="promptSubmit" onclick="postMessage({ type: 'promptSubmit', prompt: '' })">Next</atlas-button>
+					<atlas-button disabled kind="text" slot="extended">learn mode</atlas-button>
+				</atlas-button-set>
+			</atlas-workflow-step>
+
+
+			<atlas-workflow-step name="audienceSelection" x-active>
+				<span slot="subTitle">Certainly!, Cision can help...</span>
+
+				<fieldset>
+					<atlas-checkbox>
+						<span slot="label">Environmentally-conscious consumers</span>
+						<atlas-button slot="label" kind="icon" onclick="toggleHelp(event)">
+							<atlas-icon name="help"></atlas-icon>
+						</atlas-button>
+						<div slot="helperText">
+							<span><b>Age</b>: 25-55 years </span>
+							<span><b>Education</b>: College degree or higher </span>
+							<span><b>Income</b>: Middle to upper-middle class </span>
+							<span><b>Interests</b>: Sustainability, green living, eco-friendly products, renewable energy </span>
+						</div>
+					</atlas-checkbox>
+
+					<atlas-checkbox>
+						<span slot="label">Early adopters and tech enthusiasts</span>
+						<atlas-button slot="label" kind="icon" onclick="toggleHelp(event)">
+							<atlas-icon name="help"></atlas-icon>
+						</atlas-button>
+						<div slot="helperText">
+							<span><b>Age</b>: 18-45 years </span>
+							<span><b>Education</b>: College degree or higher </span>
+							<span><b>Income</b>: Middle to upper-middle class </span>
+							<span><b>Interests</b>: Cutting-edge technology, gadgets, electric vehicles, innovation </span>
+						</div>
+					</atlas-checkbox>
+					<atlas-checkbox>
+						<span slot="label">Budget-conscious car buyers</span>
+						<atlas-button slot="label" kind="icon" onclick="toggleHelp(event)">
+							<atlas-icon name="help"></atlas-icon>
+						</atlas-button>
+						<div slot="helperText">
+							<span><b>Age</b>: 25-60 years </span>
+							<span><b>Education</b>: High school diploma or higher </span>
+							<span><b>Income</b>: Lower-middle to middle class </span>
+							<span><b>Interests</b>: Cost-effective solutions, personal finance, value for money </span>
+						</div>
+					</atlas-checkbox>
+
+
+					<atlas-checkbox>
+						<span slot="label">First-time car buyers and young professionals</span>
+						<atlas-button slot="label" kind="icon" onclick="toggleHelp(event)">
+							<atlas-icon name="help"></atlas-icon>
+						</atlas-button>
+						<div slot="helperText">
+							<span><b>Age</b>: 18-30 years </span>
+							<span><b>Education</b>: Some college or higher </span>
+							<span><b>Income</b>: Entry-level to middle class </span>
+							<span><b>Interests</b>: Career development, personal finance, practicality, and affordability </span>
+						</div>
+					</atlas-checkbox>
+
+
+					<atlas-checkbox>
+						<span slot="label">Families seeking a reliable and affordable vehicle</span>
+						<atlas-button slot="label" kind="icon" onclick="toggleHelp(event)">
+							<atlas-icon name="help"></atlas-icon>
+						</atlas-button>
+						<div slot="helperText">
+							<span><b>Age</b>: 30-55 years </span>
+							<span><b>Education</b>: High school diploma or higher </span>
+							<span><b>Income</b>: Middle to upper-middle class </span>
+							<span><b>Interests</b>: Family life, safety, affordability, and practicality </span>
+						</div>
+					</atlas-checkbox>
+
+					<atlas-checkbox>
+						<span slot="label">Urban dwellers with limited space for parking and charging</span>
+						<atlas-button slot="label" kind="icon" onclick="toggleHelp(event)">
+							<atlas-icon name="help"></atlas-icon>
+						</atlas-button>
+						<div slot="helperText">
+							<span><b>Age</b>: 20-45 years </span>
+							<span><b>Education</b>: Some college or higher </span>
+							<span><b>Income</b>: Middle to upper-middle class </span>
+							<span><b>Interests</b>: Urban living, convenience, compact design, and efficient use of space </span>
+						</div>
+					</atlas-checkbox>
+				</fieldset>
+
+				<atlas-button-set slot="controls">
+					<atlas-button id="submitAudiance" onclick="postMessage({ type: 'selectAudience', prompt: '' })">Next</atlas-button>
+				</atlas-button-set>
+			</atlas-workflow-step>
+
+			<atlas-workflow-step name="deliveryPlan">
+				<span slot="title">Distribution</span>
+
+				<form>
+					<fieldset>
+						<atlas-checkbox>
+							<span slot="label">Press Release</span>
+							<div slot="helperText">
+
+Develop a comprehensive press release that highlights the key features, pricing, and availability of your new electric car model.
+
+Ensure the press release includes relevant quotes from your company's leadership team and high-quality images of the car.
+
+Distribute the press release to relevant media outlets, journalists, and influencers across each target audience group.
+
+							</div>
+						</atlas-checkbox>
+
+<!--
+
+Supporting Articles:
+
+Create a series of articles tailored to each audience group that dive deeper into the features and benefits of your new electric car model. These articles should emphasize the key messages identified for each group.
+
+Environmentally-conscious consumers: Focus on the eco-friendly aspects of the car, such as zero-emission driving and sustainable materials.
+
+Early adopters and tech enthusiasts: Highlight the innovative technology, connectivity, and smart features of the car.
+
+Budget-conscious car buyers: Emphasize the car's affordability, low cost of ownership, and competitive financing options.
+
+First-time car buyers and young professionals: Discuss the car's stylish design, advanced safety features, and user-friendly technology.
+
+Families: Showcase the car's spacious interior, top safety ratings, and energy efficiency.
+
+Urban dwellers: Focus on the car's compact design, easy parking, and versatile charging options.
+
+Fleet owners and businesses: Highlight the car's cost-effectiveness, reduced operational costs, and eco-friendly image.
+
+Social Media Posts:
+
+Develop a social media content plan that includes tailored posts for each audience group across different platforms such as Facebook, Twitter, Instagram, and LinkedIn.
+
+Environmentally-conscious consumers: Share posts about the car's sustainable features, charging options, and environmental impact. Use relevant hashtags like #EcoFriendly, #GreenLiving, and #SustainableTransportation.
+
+Early adopters and tech enthusiasts: Create posts that showcase the car's cutting-edge technology, smart features, and connectivity. Use hashtags like #ElectricVehicle, #Innovation, and #TechTrends.
+
+Budget-conscious car buyers: Share posts highlighting the car's affordability, low maintenance costs, and financing options. Use hashtags like #AffordableEV, #BudgetFriendly, and #ValueForMoney.
+
+First-time car buyers and young professionals: Post about the car's stylish design, safety features, and user-friendly technology. Use hashtags like #FirstCar, #YoungProfessional, and #UrbanDriving.
+
+Families: Share posts featuring the car's spacious interior, safety ratings, and energy efficiency. Use hashtags like #FamilyCar, #SafeDriving, and #EcoFriendlyFamily.
+
+Urban dwellers: Create posts about the car's compact design, easy parking, and charging options in urban settings. Use hashtags like #CityLife, #UrbanMobility, and #CompactCar.
+
+Fleet owners and businesses: Share posts discussing the car's cost-effective and sustainable fleet solutions, operational benefits, and eco-friendly image. Use hashtags like #FleetManagement, #GreenFleet, and #SustainableBusiness.
+			-->
+				</fieldset>
+
+				<atlas-button-set slot="controls">
+					<atlas-button id="" onclick="postMessage({ type: 'goodbye' })">Next</atlas-button>
+				</atlas-button-set>
+			</atlas-workflow-step>
+
+		</atlas-workflow>
+	</atlas-application-frame>
+</body>
+</html>
