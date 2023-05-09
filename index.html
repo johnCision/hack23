@@ -11,7 +11,7 @@
 	<script type="importmap">
 		{
 			"imports": {
-				"@cision/atlas-components": "./lib/@cision/atlas-components/dist/index.js"
+				"@cision/atlas-components": "./lib/dist/index.js"
 			}
 		}
 	</script>
@@ -43,38 +43,38 @@
 		const max_tokens= 3800
 		const completionUrl = new URL('https://api.openai.com/v1/completions')
 
-		await fetch(completionUrl, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${KEY}`
-			},
-			body: JSON.stringify({
-				model,
-				prompt,
-				temperature,
-				user,
-				max_tokens,
-				frequency_penalty: 0.33,
-				presence_penalty: 0.32,
-				top_p: 1,
-			})
-		})
-		.then(response => {
-			console.log(response)
-			response.headers.forEach((h) => {
-				console.log(h)
-			})
-			return response.json()
-		})
-		.then(data => {
-			//console.log(JSON.stringify(data))
-			console.log(data)
+		// await fetch(completionUrl, {
+		// 	method: 'POST',
+		// 	headers: {
+		// 		'Content-Type': 'application/json',
+		// 		'Authorization': `Bearer ${KEY}`
+		// 	},
+		// 	body: JSON.stringify({
+		// 		model,
+		// 		prompt,
+		// 		temperature,
+		// 		user,
+		// 		max_tokens,
+		// 		frequency_penalty: 0.33,
+		// 		presence_penalty: 0.32,
+		// 		top_p: 1,
+		// 	})
+		// })
+		// .then(response => {
+		// 	console.log(response)
+		// 	response.headers.forEach((h) => {
+		// 		console.log(h)
+		// 	})
+		// 	return response.json()
+		// })
+		// .then(data => {
+		// 	//console.log(JSON.stringify(data))
+		// 	console.log(data)
 
-			const result = data.choices[0]
-			console.log(result.text)
-		})
-		.catch(e => console.warn(e))
+		// 	const result = data.choices[0]
+		// 	console.log(result.text)
+		// })
+		// .catch(e => console.warn(e))
 
 
 		export class UI {
